@@ -4,14 +4,14 @@
 #include <BleMouse.h>
 
 // --- Pin Assignments (ESP32-C3 Super Mini) ---
-#define PIN_SDA    5
-#define PIN_SCL    6
+#define PIN_SDA    3   // MPU-6050 SDA -> GPIO 3
+#define PIN_SCL    2   // MPU-6050 SCL -> GPIO 2
 #define MPU_ADDR   0x68
 
-#define BTN_LEFT   3
-#define BTN_RIGHT  2
-#define BTN_SCROLL 7   // Button 2 (Scroll modifier)
-#define LED_PIN    8   // Onboard user LED (Active-LOW)
+#define BTN_SCROLL 5   // Button 2 (Scroll modifier) -> GPIO 5
+#define BTN_LEFT   6   // Left Click -> GPIO 6
+#define BTN_RIGHT  7   // Right Click -> GPIO 7
+#define LED_PIN    8   // Onboard user LED (Active-LOW) -> GPIO 8
 
 // --- BLE Mouse Instance ---
 BleMouse bleMouse("ESP32-C3 Air Mouse", "Espressif", 100);
@@ -197,7 +197,7 @@ void handleMotion(bool isScrollMode) {
 void handleButtons() {
   unsigned long now = millis();
 
-  // --- Left Button (Click & Drag) ---
+  // --- Left Button (Click & Drag / Pin 6) ---
   int readingLeft = digitalRead(btnLeft.pin);
   if (readingLeft != btnLeft.lastReading) {
     btnLeft.lastChangeTime = now;
@@ -217,7 +217,7 @@ void handleButtons() {
   }
   btnLeft.lastReading = readingLeft;
 
-  // --- Right Button (Click) ---
+  // --- Right Button (Click / Pin 7) ---
   int readingRight = digitalRead(btnRight.pin);
   if (readingRight != btnRight.lastReading) {
     btnRight.lastChangeTime = now;
@@ -236,7 +236,7 @@ void handleButtons() {
   }
   btnRight.lastReading = readingRight;
 
-  // --- Scroll Button / Button 2 (Pin 7) ---
+  // --- Scroll Button / Button 2 (Pin 5) ---
   int readingScroll = digitalRead(btnScroll.pin);
   if (readingScroll != btnScroll.lastReading) {
     btnScroll.lastChangeTime = now;

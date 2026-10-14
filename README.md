@@ -14,19 +14,23 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 - **Status LED**: Visual feedback for active button clicks and scrolling on onboard LED (Pin 8).
 - **Serial Debugging**: 115200 baud output for clicks, scrolling events, and sensor calibration.
 
+## Schematic Diagram
+
+![Wireless Air Mouse Schematic](schematic.svg)
+
 ---
 
 ## Hardware Pinout (ESP32-C3 Super Mini)
 
 | Component | Pin / GPIO | Description |
 | :--- | :--- | :--- |
-| **MPU-6050 SDA** | `GPIO 5` | I2C Data |
-| **MPU-6050 SCL** | `GPIO 6` | I2C Clock |
-| **MPU-6050 VCC** | `3.3V` / `5V` | Power supply (matches module voltage regulator) |
-| **MPU-6050 GND** | `GND` | Ground |
-| **Left Button** | `GPIO 3` | Push button to `GND` (Internal Pull-up) |
-| **Right Button** | `GPIO 2` | Push button to `GND` (Internal Pull-up) |
-| **Scroll Button** | `GPIO 7` | Push button to `GND` (Internal Pull-up) |
+| **MPU-6050 SDA** | `GPIO 3` | I2C Data |
+| **MPU-6050 SCL** | `GPIO 2` | I2C Clock |
+| **MPU-6050 VDD / VLOGIC** | `3V3` | 3.3V Power & Logic rail |
+| **MPU-6050 GND & AD0** | `GND` | Common Ground (AD0 pulls address to `0x68`) |
+| **Left Button (LeftSW)** | `GPIO 6` | Push button to `GND` (Internal Pull-up) |
+| **Right Button (RightSW)** | `GPIO 7` | Push button to `GND` (Internal Pull-up) |
+| **Scroll Button (ScrollSW)** | `GPIO 5` | Push button to `GND` (Internal Pull-up) |
 | **User LED** | `GPIO 8` | Onboard blue LED (Active-LOW) |
 
 > **Note**: Buttons are wired between the designated GPIO pin and **GND**. Internal pull-ups are enabled in firmware.
@@ -156,6 +160,6 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 ## Controls & Usage
 
 - **Cursor Tracking**: Point and tilt the controller. Pitch controls vertical movement; yaw controls horizontal movement.
-- **Left Click**: Press button on `GPIO 3`. Can be held down for drag-and-drop operations.
-- **Right Click**: Press button on `GPIO 2`.
-- **Scroll Wheel**: Press and hold the scroll button on `GPIO 7`, then tilt the controller up or down to scroll. Cursor tracking is temporarily locked while scrolling.
+- **Left Click**: Press button on `GPIO 6`. Can be held down for drag-and-drop operations.
+- **Right Click**: Press button on `GPIO 7`.
+- **Scroll Wheel**: Press and hold the scroll button on `GPIO 5`, then tilt the controller up or down to scroll. Cursor tracking is temporarily locked while scrolling.

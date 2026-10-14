@@ -1,0 +1,7 @@
+# KiCad temp & lock files
+*.lck
+*.bak
+*-save.kicad_sch
+*-save.kicad_pcb
+.history/
+_autosave-*

@@ -1,20 +1,23 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <esp_mac.h>
 #define USE_NIMBLE
 #include <BleMouse.h>
 
-// --- Pin Assignments (ESP32-C3 Super Mini) ---
-#define PIN_SDA    3   // MPU-6050 SDA -> GPIO 3
-#define PIN_SCL    2   // MPU-6050 SCL -> GPIO 2
+// --- Pin Assignments (ESP32-S3 Super Mini) ---
+#define PIN_SDA    12   // MPU-6050 SDA -> GPIO 12
+#define PIN_SCL    11   // MPU-6050 SCL -> GPIO 11
 #define MPU_ADDR   0x68
 
-#define BTN_SCROLL 5   // Button 2 (Scroll modifier) -> GPIO 5
-#define BTN_LEFT   6   // Left Click -> GPIO 6
-#define BTN_RIGHT  7   // Right Click -> GPIO 7
-#define LED_PIN    8   // Onboard user LED (Active-LOW) -> GPIO 8
+#define BTN_SCROLL    5   // Button 2 (Scroll modifier) -> GPIO 5
+#define BTN_LEFT      6   // Left Click -> GPIO 6
+#define BTN_RIGHT     7   // Right Click -> GPIO 7
+#define PIN_LED_CALIB 1   // External Calibrated LED -> GPIO 1 (Permanently ON after calibration)
+#define PIN_LED_BTN   2   // External Button Click LED -> GPIO 2 (ON when button pressed)
+#define LED_PIN       48  // Onboard RGB LED (WS2812) -> GPIO 48
 
 // --- BLE Mouse Instance ---
-BleMouse bleMouse("ESP32-C3 Air Mouse", "Espressif", 100);
+BleMouse bleMouse("ESP32-S3 Air Mouse", "Espressif", 100);
 
 // --- Sensor Calibration Offsets ---
 float gx_offset = 0.0f;
@@ -24,8 +27,8 @@ float ay_offset = 0.0f;
 float az_offset = 0.0f;
 
 // --- Motion & Filter Parameters ---
-const float Y_DEADZONE       = 1.8f;  // Deg/s deadband to filter pitch tremor
-const float X_DEADZONE       = 1.4f;  // Deg/s deadband to filter yaw tremor
+const float Y_DEADZONE       = 2.0f;  // Deg/s deadband to filter pitch tremor
+const float X_DEADZONE       = 1.8f;  // Deg/s deadband to filter yaw tremor
 const float ALPHA            = 0.22f; // Low-pass filter smoothing factor
 const float SENSITIVITY      = 0.40f; // Cursor sensitivity multiplier
 const float SCROLL_THRESHOLD = 8.0f;  // Pitch accumulator threshold per wheel notch
@@ -55,6 +58,11 @@ Button btnScroll = { BTN_SCROLL, HIGH, HIGH, 0 };
 
 void calibrateSensors() {
   Serial.println("Calibrating... Keep the sensor stationary and level.");
+
+  // Visual indicator: RED = Keep mouse still on flat surface!
+  rgbLedWrite(LED_PIN, 60, 0, 0);
+  delay(500); // Wait for hand placement/vibration to settle
+
   const int samples = 250;
   long rawAx = 0, rawAy = 0, rawAz = 0;
   long rawGx = 0, rawGz = 0;
@@ -87,6 +95,14 @@ void calibrateSensors() {
   gz_offset = ((float)rawGz / samples) / 65.5f;
 
   Serial.println("[SUCCESS] Calibration complete.");
+
+  // Permanently turn ON Calibrated LED (GPIO 1)
+  digitalWrite(PIN_LED_CALIB, HIGH);
+
+  // Visual indicator: GREEN flash = Calibration complete & ready
+  rgbLedWrite(LED_PIN, 0, 60, 0);
+  delay(500);
+  rgbLedWrite(LED_PIN, 0, 0, 0);
 }
 
 void initMPU() {
@@ -115,12 +131,22 @@ void initMPU() {
 }
 
 void updateLEDStatus() {
-  // LED is Active-LOW: ON if any button is active/pressed
   bool anyButtonPressed = (btnLeft.stableState == LOW) ||
                           (btnRight.stableState == LOW) ||
                           (btnScroll.stableState == LOW);
 
-  digitalWrite(LED_PIN, anyButtonPressed ? LOW : HIGH);
+  // External button indicator LED on GPIO 2
+  digitalWrite(PIN_LED_BTN, anyButtonPressed ? HIGH : LOW);
+
+  if (btnLeft.stableState == LOW) {
+    rgbLedWrite(LED_PIN, 0, 0, 50);   // Blue: Left click / drag
+  } else if (btnRight.stableState == LOW) {
+    rgbLedWrite(LED_PIN, 0, 50, 0);   // Green: Right click
+  } else if (btnScroll.stableState == LOW) {
+    rgbLedWrite(LED_PIN, 50, 25, 0);  // Amber: Scroll mode
+  } else {
+    rgbLedWrite(LED_PIN, 0, 0, 0);    // OFF
+  }
 }
 
 // ============================================================================
@@ -226,9 +252,10 @@ void handleButtons() {
     if (readingRight != btnRight.stableState) {
       btnRight.stableState = readingRight;
       if (btnRight.stableState == LOW) {
-        bleMouse.click(MOUSE_RIGHT);
-        Serial.println("[CLICK] Right Click");
+        bleMouse.press(MOUSE_RIGHT);
+        Serial.println("[CLICK] Right Button Pressed");
       } else {
+        bleMouse.release(MOUSE_RIGHT);
         Serial.println("[RELEASE] Right Button Released");
       }
       updateLEDStatus();
@@ -262,9 +289,14 @@ void handleButtons() {
 void setup() {
   Serial.begin(115200);
 
-  // Status LED (Active-LOW: HIGH is OFF)
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
+  // Status RGB LED (turn OFF initially)
+  rgbLedWrite(LED_PIN, 0, 0, 0);
+
+  // External LEDs
+  pinMode(PIN_LED_CALIB, OUTPUT);
+  digitalWrite(PIN_LED_CALIB, LOW);
+  pinMode(PIN_LED_BTN, OUTPUT);
+  digitalWrite(PIN_LED_BTN, LOW);
 
   // Buttons with internal pull-ups
   pinMode(btnLeft.pin, INPUT_PULLUP);
@@ -278,7 +310,11 @@ void setup() {
   initMPU();
 
   bleMouse.begin();
-  Serial.println("BLE Mouse ready. Advertising as 'ESP32-C3 Air Mouse'...");
+
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_BT);
+  Serial.printf("BLE MAC Address: %02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  Serial.println("BLE Mouse ready. Advertising as 'ESP32-S3 Air Mouse'...");
 }
 
 void loop() {

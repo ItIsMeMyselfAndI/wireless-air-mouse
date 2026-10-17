@@ -29,20 +29,22 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 
 ---
 
-## Hardware Pinout (ESP32-C3 Super Mini)
+## Hardware Pinout & Pin Mapping
 
-| Component | Pin / GPIO | Description |
-| :--- | :--- | :--- |
-| **MPU-6050 SDA** | `GPIO 3` | I2C Data |
-| **MPU-6050 SCL** | `GPIO 2` | I2C Clock |
-| **MPU-6050 VDD / VLOGIC** | `3V3` | 3.3V Power & Logic rail |
-| **MPU-6050 GND & AD0** | `GND` | Common Ground (AD0 pulls address to `0x68`) |
-| **Left Button (LeftSW)** | `GPIO 20` | Push button to `GND` (Internal Pull-up) |
-| **Right Button (RightSW)** | `GPIO 21` | Push button to `GND` (Internal Pull-up) |
-| **Scroll Button (ScrollSW)** | `GPIO 10` | Push button to `GND` (Internal Pull-up) |
-| **Calibrated LED (Green)** | `GPIO 5` | External LED (via 220Ω–470Ω resistor to `GND`); permanently ON when ready |
-| **Button Click LED** | `GPIO 6` | External LED (via 220Ω–470Ω resistor to `GND`); ON during button presses |
-| **Onboard User LED** | `GPIO 8` | Onboard blue LED (Active-LOW) |
+The sketch includes an automatic compile-time pin map for both **ESP32-C3 Super Mini** and **ESP32-S3 Super Mini**. Target detection is automatic based on the selected board/FQBN, or can be forced at the top of [WirelessAirMouse.ino](file:///home/eger/mcu/WirelessAirMouse/WirelessAirMouse.ino) (`#define BOARD_ESP32_C3` or `#define BOARD_ESP32_S3`).
+
+| Component | ESP32-C3 Pin | ESP32-S3 Pin | Description |
+| :--- | :--- | :--- | :--- |
+| **MPU-6050 SDA** | `GPIO 3` | `GPIO 12` | I2C Data |
+| **MPU-6050 SCL** | `GPIO 2` | `GPIO 11` | I2C Clock |
+| **MPU-6050 VDD / VLOGIC** | `3V3` | `3V3` | 3.3V Power & Logic rail |
+| **MPU-6050 GND & AD0** | `GND` | `GND` | Common Ground (AD0 pulls address to `0x68`) |
+| **Left Button (LeftSW)** | `GPIO 20` | `GPIO 6` | Push button to `GND` (Internal Pull-up) |
+| **Right Button (RightSW)** | `GPIO 21` | `GPIO 7` | Push button to `GND` (Internal Pull-up) |
+| **Scroll Button (ScrollSW)** | `GPIO 10` | `GPIO 5` | Push button to `GND` (Internal Pull-up) |
+| **Calibrated LED (Green)** | `GPIO 5` | `GPIO 1` | External LED (via 220Ω–470Ω resistor to `GND`); permanently ON when ready |
+| **Button Click LED** | `GPIO 6` | `GPIO 2` | External LED (via 220Ω–470Ω resistor to `GND`); ON during button presses |
+| **Onboard Status LED** | `GPIO 8` (Blue, active-LOW) | `GPIO 48` (WS2812 RGB) | Calibration / click activity feedback |
 
 > **Note**: Buttons are wired between the designated GPIO pin and **GND** (internal pull-ups enabled). External LEDs **require** a 220Ω–470Ω series resistor to avoid damaging the GPIO pins.
 

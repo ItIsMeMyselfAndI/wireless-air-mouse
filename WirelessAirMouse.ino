@@ -5,20 +5,20 @@
 #include <NimBLEDevice.h>
 #include <BleMouse.h>
 
-// --- Pin Assignments (ESP32-S3 Super Mini) ---
-#define PIN_SDA    12   // MPU-6050 SDA -> GPIO 12
-#define PIN_SCL    11   // MPU-6050 SCL -> GPIO 11
-#define MPU_ADDR   0x68
+// --- Pin Assignments (ESP32-C3 Super Mini) ---
+#define PIN_SDA       3   // MPU-6050 SDA -> GPIO 3
+#define PIN_SCL       2   // MPU-6050 SCL -> GPIO 2
+#define MPU_ADDR      0x68
 
-#define BTN_SCROLL    5   // Button 2 (Scroll modifier) -> GPIO 5
-#define BTN_LEFT      6   // Left Click -> GPIO 6
-#define BTN_RIGHT     7   // Right Click -> GPIO 7
-#define PIN_LED_CALIB 1   // External Calibrated LED -> GPIO 1 (Permanently ON after calibration)
-#define PIN_LED_BTN   2   // External Button Click LED -> GPIO 2 (ON when button pressed)
-#define LED_PIN       48  // Onboard RGB LED (WS2812) -> GPIO 48
+#define BTN_SCROLL    10  // Button 2 (Scroll modifier) -> GPIO 10
+#define BTN_LEFT      20  // Left Click -> GPIO 20
+#define BTN_RIGHT     21  // Right Click -> GPIO 21
+#define PIN_LED_CALIB 5   // External Calibrated LED -> GPIO 5 (Permanently ON after calibration)
+#define PIN_LED_BTN   6   // External Button Click LED -> GPIO 6 (ON when button pressed)
+#define LED_PIN       8   // Onboard Blue LED (Active-LOW) -> GPIO 8
 
 // --- BLE Mouse Instance ---
-BleMouse bleMouse("ESP32-S3 Air Mouse", "Espressif", 100);
+BleMouse bleMouse("ESP32-C3 Air Mouse", "Espressif", 100);
 
 // --- Sensor Calibration Offsets ---
 float gx_offset = 0.0f;
@@ -61,8 +61,8 @@ Button btnScroll = { BTN_SCROLL, HIGH, HIGH, 0 };
 void calibrateSensors() {
   Serial.println("Calibrating... Keep the sensor stationary and level.");
 
-  // Visual indicator: RED = Keep mouse still on flat surface!
-  rgbLedWrite(LED_PIN, 60, 0, 0);
+  // Turn ON onboard LED during calibration (Active-LOW: LOW is ON)
+  digitalWrite(LED_PIN, LOW);
   delay(500); // Wait for hand placement/vibration to settle
 
   const int samples = 250;
@@ -98,13 +98,11 @@ void calibrateSensors() {
 
   Serial.println("[SUCCESS] Calibration complete.");
 
-  // Permanently turn ON Calibrated LED (GPIO 1)
+  // Permanently turn ON Calibrated LED (GPIO 5)
   digitalWrite(PIN_LED_CALIB, HIGH);
 
-  // Visual indicator: GREEN flash = Calibration complete & ready
-  rgbLedWrite(LED_PIN, 0, 60, 0);
-  delay(500);
-  rgbLedWrite(LED_PIN, 0, 0, 0);
+  // Turn OFF onboard LED (Active-LOW: HIGH is OFF)
+  digitalWrite(LED_PIN, HIGH);
 }
 
 void sleepMPU() {
@@ -149,18 +147,11 @@ void updateLEDStatus() {
                           (btnRight.stableState == LOW) ||
                           (btnScroll.stableState == LOW);
 
-  // External button indicator LED on GPIO 2
+  // External button indicator LED on GPIO 6
   digitalWrite(PIN_LED_BTN, anyButtonPressed ? HIGH : LOW);
 
-  if (btnLeft.stableState == LOW) {
-    rgbLedWrite(LED_PIN, 0, 0, 50);   // Blue: Left click / drag
-  } else if (btnRight.stableState == LOW) {
-    rgbLedWrite(LED_PIN, 0, 50, 0);   // Green: Right click
-  } else if (btnScroll.stableState == LOW) {
-    rgbLedWrite(LED_PIN, 50, 25, 0);  // Amber: Scroll mode
-  } else {
-    rgbLedWrite(LED_PIN, 0, 0, 0);    // OFF
-  }
+  // Onboard user LED mirrors active clicks (Active-LOW: LOW is ON)
+  digitalWrite(LED_PIN, anyButtonPressed ? LOW : HIGH);
 }
 
 // ============================================================================
@@ -303,8 +294,9 @@ void handleButtons() {
 void setup() {
   Serial.begin(115200);
 
-  // Status RGB LED (turn OFF initially)
-  rgbLedWrite(LED_PIN, 0, 0, 0);
+  // Status LED (Active-LOW: HIGH is OFF)
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
 
   // External LEDs
   pinMode(PIN_LED_CALIB, OUTPUT);
@@ -327,8 +319,11 @@ void setup() {
 
   // Explicitly configure advertising payload for Windows 11 & Android discovery
   NimBLEAdvertising* pAdv = NimBLEDevice::getAdvertising();
-  pAdv->setName("ESP32-S3 Air Mouse");
+  pAdv->stop();
+  pAdv->setName("ESP32-C3 Air Mouse");
   pAdv->setAppearance(0x03C2); // HID Mouse appearance
+  pAdv->addServiceUUID(NimBLEUUID((uint16_t)0x1812)); // HID Service
+  pAdv->addServiceUUID(NimBLEUUID((uint16_t)0x180F)); // Battery Service
   pAdv->enableScanResponse(true);
   pAdv->start();
 
@@ -344,7 +339,7 @@ void setup() {
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_BT);
   Serial.printf("BLE MAC Address: %02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  Serial.println("BLE Mouse ready. Advertising as 'ESP32-S3 Air Mouse'...");
+  Serial.println("BLE Mouse ready. Advertising as 'ESP32-C3 Air Mouse'...");
 }
 
 void loop() {
@@ -370,7 +365,7 @@ void loop() {
       isCalibrated = false;
       digitalWrite(PIN_LED_CALIB, LOW);
       digitalWrite(PIN_LED_BTN, LOW);
-      rgbLedWrite(LED_PIN, 0, 0, 0);
+      digitalWrite(LED_PIN, HIGH);
       sleepMPU();
       Serial.println("[POWER] Host disconnected. Sensor in sleep mode.");
     }

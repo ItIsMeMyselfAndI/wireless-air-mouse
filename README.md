@@ -19,13 +19,13 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 - **Auto-Reconnecting & Advertising**: Seamless host switching with automatic BLE advertising restart upon disconnect.
 - **Serial Debugging**: 115200 baud output for clicks, scrolling events, calibration offsets, and BLE MAC address readout.
 
-## Schematic Diagram
+## Schematic Diagram (ESP32-S3 Prototype)
 
-![Wireless Air Mouse Schematic](schematic.svg)
+![Wireless Air Mouse ESP32-S3 Schematic](schematic_s3.svg)
 
-### Breadboard Prototype
+### Breadboard Prototype (ESP32-S3)
 
-![Wireless Air Mouse Breadboard Prototype](breadboard.jpg)
+![Wireless Air Mouse ESP32-S3 Breadboard Prototype](breadboard_s3.jpg)
 
 ---
 

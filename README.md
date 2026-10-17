@@ -24,6 +24,10 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-S3 Super M
 
 ![Wireless Air Mouse Schematic](schematic.svg)
 
+### Breadboard Prototype
+
+![Wireless Air Mouse Breadboard Prototype](breadboard.jpg)
+
 ---
 
 ## Hardware Pinout (ESP32-S3 Super Mini)

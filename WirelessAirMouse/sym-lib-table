@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "ESP32-S3-SuperMini") (type "KiCad") (uri "/home/eger/mcu/kicad_libs/KiCad_ESP32-S3-SuperMini/ESP32-S3-SuperMini.kicad_sym") (options "") (descr ""))
+)

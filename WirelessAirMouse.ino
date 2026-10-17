@@ -6,16 +6,15 @@
 #include <BleMouse.h>
 
 // ============================================================================
-// Board Selection & Pin Mapping (Supports ESP32-C3 and ESP32-S3 Super Mini)
-// Auto-detected via compiler target, or uncomment one to force:
-// #define BOARD_ESP32_C3
-// #define BOARD_ESP32_S3
+// Board Selection & Pin Mapping (Default: ESP32-C3 Super Mini)
+// To switch to ESP32-S3: comment out BOARD_ESP32_C3 and uncomment BOARD_ESP32_S3
 // ============================================================================
+#define BOARD_ESP32_C3
+// #define BOARD_ESP32_S3
+
 #if !defined(BOARD_ESP32_C3) && !defined(BOARD_ESP32_S3)
   #if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(ARDUINO_ESP32S3_DEV)
     #define BOARD_ESP32_S3
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3) || defined(ARDUINO_ESP32C3_DEV)
-    #define BOARD_ESP32_C3
   #else
     #define BOARD_ESP32_C3 // Default fallback
   #endif

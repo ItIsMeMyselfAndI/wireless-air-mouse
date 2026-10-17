@@ -19,21 +19,50 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 - **Auto-Reconnecting & Advertising**: Seamless host switching with automatic BLE advertising restart upon disconnect.
 - **Serial Debugging**: 115200 baud output for clicks, scrolling events, calibration offsets, and BLE MAC address readout.
 
-## Schematic Diagram (ESP32-S3 Prototype)
+## Schematics & Prototypes
 
+### ESP32-C3 Super Mini (Default)
+
+#### Schematic Diagram
+![Wireless Air Mouse ESP32-C3 Schematic](schematic_c3.svg)
+
+#### Breadboard Prototype
+![Wireless Air Mouse ESP32-C3 Breadboard Prototype](breadboard_c3.jpg)
+
+### ESP32-S3 Super Mini
+
+#### Schematic Diagram
 ![Wireless Air Mouse ESP32-S3 Schematic](schematic_s3.svg)
 
-### Breadboard Prototype (ESP32-S3)
-
+#### Breadboard Prototype
 ![Wireless Air Mouse ESP32-S3 Breadboard Prototype](breadboard_s3.jpg)
 
----
+## Board Selection & Hardware Pinout
 
-## Hardware Pinout & Pin Mapping
+The default microcontroller target is the **ESP32-C3 Super Mini**.
 
-The sketch includes an automatic compile-time pin map for both **ESP32-C3 Super Mini** and **ESP32-S3 Super Mini**. Target detection is automatic based on the selected board/FQBN, or can be forced at the top of [WirelessAirMouse.ino](file:///home/eger/mcu/WirelessAirMouse/WirelessAirMouse.ino) (`#define BOARD_ESP32_C3` or `#define BOARD_ESP32_S3`).
+### How to Switch Between C3 and S3
 
-| Component | ESP32-C3 Pin | ESP32-S3 Pin | Description |
+At the top of [WirelessAirMouse.ino](file:///home/eger/mcu/WirelessAirMouse/WirelessAirMouse.ino#L8-L13), toggle the `#define`:
+
+```cpp
+// Default: ESP32-C3 Super Mini
+#define BOARD_ESP32_C3
+// #define BOARD_ESP32_S3
+
+// To switch to ESP32-S3 Super Mini:
+// #define BOARD_ESP32_C3
+#define BOARD_ESP32_S3
+```
+
+When you toggle the board, the sketch automatically configures:
+1. **Pin Mapping**: Automatically switches I2C, button, and indicator pin assignments.
+2. **Onboard LED Handling**: Uses active-LOW single LED driving on C3 (`GPIO 8`), and WS2812 RGB color signaling on S3 (`GPIO 48`).
+3. **BLE Device Name**: Advertises as `"ESP32-C3 Air Mouse"` or `"ESP32-S3 Air Mouse"`.
+
+### Pinout Comparison Table
+
+| Component | ESP32-C3 Pin (Default) | ESP32-S3 Pin | Description |
 | :--- | :--- | :--- | :--- |
 | **MPU-6050 SDA** | `GPIO 3` | `GPIO 12` | I2C Data |
 | **MPU-6050 SCL** | `GPIO 2` | `GPIO 11` | I2C Clock |
@@ -113,7 +142,11 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 
 3. **Compile, Upload & Monitor in One Shot**:
    ```bash
+   # ESP32-C3 Super Mini (Default):
    arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc -u -t -p /dev/ttyACM0 -c baudrate=115200 .
+
+   # ESP32-S3 Super Mini:
+   arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,USBMode=hwcdc -u -t -p /dev/ttyACM0 -c baudrate=115200 .
    ```
 
 #### Windows
@@ -128,7 +161,11 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 
 2. **Compile, Upload & Monitor in One Shot**:
    ```powershell
+   # ESP32-C3 Super Mini (Default):
    arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc -u -t -p COM3 -c baudrate=115200 .
+
+   # ESP32-S3 Super Mini:
+   arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,USBMode=hwcdc -u -t -p COM3 -c baudrate=115200 .
    ```
 
 ---
@@ -180,3 +217,17 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 - **Left Click**: Press button on `GPIO 20`. Can be held down for drag-and-drop operations.
 - **Right Click**: Press button on `GPIO 21`. Supports standard clicks and right-click holds/context menus.
 - **Scroll Wheel**: Press and hold the scroll button on `GPIO 10`, then tilt the controller up or down to scroll. Cursor tracking is temporarily locked while scrolling.
+
+---
+
+> [!WARNING]
+> **Platform Testing Notice**: This firmware has only been tested on **Linux** and **Android**. It has **not yet been tested on Windows**.
+
+### Platform Compatibility & Testing Status
+
+| Platform | Testing Status | Notes |
+| :--- | :--- | :--- |
+| **Linux (Arch Linux / BlueZ)** | Tested & Verified | Full cursor movement, buttons, and scroll wheel verified. |
+| **Android** | Tested & Verified | Native BLE mouse pointer, clicks, and scrolling verified. |
+| **Windows 10 / 11** | **Untested** | HOGP descriptor and appearance included, but unverified on hardware. |
+| **macOS / iOS** | **Untested** | Standard BLE HID implementation; not yet verified on hardware. |

@@ -1,18 +1,24 @@
-# ESP32-C3 Wireless BLE Air Mouse
+# ESP32-S3 Wireless BLE Air Mouse
 
-An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super Mini microcontroller and an MPU-6050 6-axis IMU. It emulates a standard BLE HID mouse compatible with Windows, Linux, macOS, Android, and iOS.
+An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-S3 Super Mini microcontroller and an MPU-6050 6-axis IMU. It emulates a standard BLE HID mouse compatible with Windows, Linux, macOS, Android, and iOS.
 
 ---
 
 ## Features
 
+- **Dual-Core Efficiency**: Leverages ESP32-S3 dual cores to offload BLE stack operations and eliminate I2C polling stalls/overheating.
 - **Inertial Air Tracking**: Uses pitch (vertical) and yaw (horizontal) angular velocity from the gyroscope.
 - **Drift & Tremor Suppression**: Exponential moving average (EMA) low-pass filter with deadzone filtering.
-- **Scroll Wheel Mode**: Hold the dedicated scroll button (Pin 7) and tilt up/down to scroll.
-- **Left Click & Drag**: Debounced press and release support on Pin 3.
-- **Right Click**: Debounced click support on Pin 2.
-- **Status LED**: Visual feedback for active button clicks and scrolling on onboard LED (Pin 8).
-- **Serial Debugging**: 115200 baud output for clicks, scrolling events, and sensor calibration.
+- **Scroll Wheel Mode**: Hold the dedicated scroll button (Pin 5) and tilt up/down to scroll.
+- **Left Click & Drag**: Debounced press and release support on Pin 6.
+- **Right Click**: Debounced press and release support on Pin 7 (context menus & hold support).
+- **Dual LED Status Indicators**:
+  - **Calibrated Indicator (Pin 1)**: External LED stays permanently ON once zero-offset calibration completes.
+  - **Button Activity (Pin 2)**: External LED lights up whenever any button is actively pressed.
+  - **Onboard WS2812 RGB LED (Pin 48)**: Solid Red during calibration, Green flash when complete, color-coded button feedback.
+- **Smart Power Management**: Sensor is kept in hardware sleep while disconnected; automatically wakes and calibrates only upon active BLE connection.
+- **Auto-Reconnecting & Advertising**: Seamless host switching with automatic BLE advertising restart upon disconnect.
+- **Serial Debugging**: 115200 baud output for clicks, scrolling events, calibration offsets, and BLE MAC address readout.
 
 ## Schematic Diagram
 
@@ -20,20 +26,22 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 
 ---
 
-## Hardware Pinout (ESP32-C3 Super Mini)
+## Hardware Pinout (ESP32-S3 Super Mini)
 
 | Component | Pin / GPIO | Description |
 | :--- | :--- | :--- |
-| **MPU-6050 SDA** | `GPIO 3` | I2C Data |
-| **MPU-6050 SCL** | `GPIO 2` | I2C Clock |
+| **MPU-6050 SDA** | `GPIO 12` | I2C Data |
+| **MPU-6050 SCL** | `GPIO 11` | I2C Clock |
 | **MPU-6050 VDD / VLOGIC** | `3V3` | 3.3V Power & Logic rail |
 | **MPU-6050 GND & AD0** | `GND` | Common Ground (AD0 pulls address to `0x68`) |
 | **Left Button (LeftSW)** | `GPIO 6` | Push button to `GND` (Internal Pull-up) |
 | **Right Button (RightSW)** | `GPIO 7` | Push button to `GND` (Internal Pull-up) |
 | **Scroll Button (ScrollSW)** | `GPIO 5` | Push button to `GND` (Internal Pull-up) |
-| **User LED** | `GPIO 8` | Onboard blue LED (Active-LOW) |
+| **Calibrated LED (Green)** | `GPIO 1` | External LED (via 220Ω–470Ω resistor to `GND`); permanently ON when ready |
+| **Button Click LED** | `GPIO 2` | External LED (via 220Ω–470Ω resistor to `GND`); ON during button presses |
+| **Onboard RGB LED** | `GPIO 48` | Onboard addressable WS2812 RGB LED |
 
-> **Note**: Buttons are wired between the designated GPIO pin and **GND**. Internal pull-ups are enabled in firmware.
+> **Note**: Buttons are wired between the designated GPIO pin and **GND** (internal pull-ups enabled). External LEDs **require** a 220Ω–470Ω series resistor to avoid damaging the GPIO pins.
 
 ---
 
@@ -62,8 +70,9 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
    - Open **Tools > Board > Boards Manager...**, search for `esp32`, and install **esp32 by Espressif Systems**.
 
 2. **Select Board and Configuration**:
-   - Board: **ESP32C3 Dev Module** (or your specific ESP32-C3 board).
-   - USB CDC On Boot: **Enabled** (Important for Serial output on ESP32-C3 USB port).
+   - Board: **ESP32S3 Dev Module** (or your specific S3 Super Mini board).
+   - USB CDC On Boot: **Enabled** (Important for Serial output over USB-C).
+   - USB Mode: **Hardware CDC and JTAG** (`hwcdc`).
    - Flash Size: **4MB**.
    - Partition Scheme: **Default 4MB with spiffs** (or *Minimal SPIFFS*).
 
@@ -73,7 +82,7 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
    - Search and install `ESP32 BLE Mouse`.
 
 4. **Flash the Sketch**:
-   - Connect the ESP32-C3 via USB.
+   - Connect the ESP32-S3 via USB.
    - Select the COM port (`COMx` on Windows, `/dev/ttyACM0` or `/dev/ttyUSB0` on Linux).
    - Click **Upload**.
 
@@ -98,13 +107,9 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
    arduino-cli lib install "ESP32 BLE Mouse"
    ```
 
-3. **Compile and Upload**:
+3. **Compile, Upload & Monitor in One Shot**:
    ```bash
-   # Compile with USB CDC enabled for ESP32-C3
-   arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc WirelessAirMouse/
-
-   # Upload (replace /dev/ttyACM0 with your port)
-   arduino-cli upload -p /dev/ttyACM0 --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc WirelessAirMouse/
+   arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,USBMode=hwcdc -u -t -p /dev/ttyACM0 -c baudrate=115200 .
    ```
 
 #### Windows
@@ -117,22 +122,21 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
    arduino-cli lib install "ESP32 BLE Mouse"
    ```
 
-2. **Compile and Upload**:
+2. **Compile, Upload & Monitor in One Shot**:
    ```powershell
-   # Compile
-   arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc .\WirelessAirMouse\
-
-   # Upload (replace COM3 with your actual COM port from Device Manager)
-   arduino-cli upload -p COM3 --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc .\WirelessAirMouse\
+   arduino-cli compile --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc,USBMode=hwcdc -u -t -p COM3 -c baudrate=115200 .
    ```
 
 ---
 
 ## Operating Instructions
 
-### 1. Calibration on Startup
-- Keep the board **stationary and level** for ~2-3 seconds immediately after power-up/reset.
-- The firmware collects 250 samples to compute zero-rate gyro and accel offsets.
+### 1. Connection-Triggered Calibration & Sleep
+- Upon boot, the sensor remains in **hardware sleep mode** and indicator LEDs stay OFF while advertising.
+- When your host device (PC/phone) connects, the sensor automatically wakes and begins calibration:
+  - **Onboard RGB LED turns Red**: keep the mouse stationary on a flat surface (~1.5s).
+  - When calibration finishes, the **Onboard RGB LED flashes Green** and the **External Calibrated LED (GPIO 1) turns permanently ON**.
+- If the host disconnects, the mouse turns off indicators, puts the sensor back to sleep, and resumes advertising for the next device.
 
 ### 2. Pairing with Your Computer
 
@@ -140,20 +144,29 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 1. Open **Settings > Bluetooth & devices**.
 2. Turn Bluetooth **On** and click **Add device**.
 3. Select **Bluetooth**.
-4. Click on **ESP32-C3 Air Mouse**.
+4. Click on **ESP32-S3 Air Mouse**.
 5. Once paired, the mouse is ready to use immediately.
 
 #### Linux (GNOME / KDE / bluez)
-- **GUI**: Open **Settings > Bluetooth**, wait for **ESP32-C3 Air Mouse** to appear, and click **Connect**.
+- **GUI**: Open **Settings > Bluetooth**, wait for **ESP32-S3 Air Mouse** to appear, and click **Connect**.
 - **CLI (`bluetoothctl`)**:
   ```bash
   bluetoothctl
   scan on
-  # Look for "ESP32-C3 Air Mouse" and copy its MAC address (e.g., XX:XX:XX:XX:XX:XX)
+  # Look for "ESP32-S3 Air Mouse" and copy its MAC address (printed on Serial during startup)
   pair XX:XX:XX:XX:XX:XX
   trust XX:XX:XX:XX:XX:XX
   connect XX:XX:XX:XX:XX:XX
   ```
+
+#### Android / iOS
+1. Ensure the mouse is **disconnected from any other host** (e.g. disconnect or turn off Bluetooth on your PC).
+2. On Android, make sure **Location** is turned ON (required for BLE discovery).
+3. Open **Settings > Bluetooth / Connected Devices > Pair new device**.
+4. Select **ESP32-S3 Air Mouse** from the list.
+5. An on-screen mouse pointer will appear immediately once connected.
+
+> **Host Switching Note**: The air mouse connects to one host at a time. When connected, advertising stops. To pair with a new device, disconnect from the current host—the mouse will automatically restart advertising.
 
 ---
 
@@ -161,5 +174,5 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 
 - **Cursor Tracking**: Point and tilt the controller. Pitch controls vertical movement; yaw controls horizontal movement.
 - **Left Click**: Press button on `GPIO 6`. Can be held down for drag-and-drop operations.
-- **Right Click**: Press button on `GPIO 7`.
+- **Right Click**: Press button on `GPIO 7`. Supports standard clicks and right-click holds/context menus.
 - **Scroll Wheel**: Press and hold the scroll button on `GPIO 5`, then tilt the controller up or down to scroll. Cursor tracking is temporarily locked while scrolling.

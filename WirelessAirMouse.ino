@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <esp_mac.h>
 #define USE_NIMBLE
+#include <NimBLEDevice.h>
 #include <BleMouse.h>
 
 // --- Pin Assignments (ESP32-S3 Super Mini) ---
@@ -37,6 +38,7 @@ const float SCROLL_THRESHOLD = 8.0f;  // Pitch accumulator threshold per wheel n
 float smoothX = 0.0f;
 float smoothY = 0.0f;
 float scrollAccumulator = 0.0f;
+bool isCalibrated = false;
 
 // --- Button Debounce Structure & Instances ---
 const unsigned long DEBOUNCE_DELAY_MS = 30;
@@ -105,15 +107,26 @@ void calibrateSensors() {
   rgbLedWrite(LED_PIN, 0, 0, 0);
 }
 
+void sleepMPU() {
+  Wire.beginTransmission(MPU_ADDR);
+  Wire.write(0x6B);
+  Wire.write(0x40); // Set SLEEP bit in PWR_MGMT_1
+  Wire.endTransmission();
+}
+
+void wakeMPU() {
+  Wire.beginTransmission(MPU_ADDR);
+  Wire.write(0x6B);
+  Wire.write(0x00); // Clear SLEEP bit in PWR_MGMT_1
+  Wire.endTransmission();
+  delay(30);
+}
+
 void initMPU() {
   Wire.begin(PIN_SDA, PIN_SCL);
 
-  // Wake up MPU-6050: clear PWR_MGMT_1 (0x6B)
-  Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x6B);
-  Wire.write(0x00);
-  Wire.endTransmission();
-  delay(50);
+  // Wake up MPU-6050 to configure registers
+  wakeMPU();
 
   // Configure Accelerometer to +/- 8g (0x1C = 0x10)
   Wire.beginTransmission(MPU_ADDR);
@@ -127,7 +140,8 @@ void initMPU() {
   Wire.write(0x08);
   Wire.endTransmission();
 
-  calibrateSensors();
+  // Put sensor to sleep until a host connects
+  sleepMPU();
 }
 
 void updateLEDStatus() {
@@ -311,6 +325,22 @@ void setup() {
 
   bleMouse.begin();
 
+  // Explicitly configure advertising payload for Windows 11 & Android discovery
+  NimBLEAdvertising* pAdv = NimBLEDevice::getAdvertising();
+  pAdv->setName("ESP32-S3 Air Mouse");
+  pAdv->setAppearance(0x03C2); // HID Mouse appearance
+  pAdv->enableScanResponse(true);
+  pAdv->start();
+
+  bleMouse.onConnect([]() {
+    Serial.println("[BLE] Host connected!");
+  });
+
+  bleMouse.onDisconnect([]() {
+    NimBLEDevice::startAdvertising();
+    Serial.println("[BLE] Disconnected. Restarted advertising...");
+  });
+
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_BT);
   Serial.printf("BLE MAC Address: %02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -319,11 +349,31 @@ void setup() {
 
 void loop() {
   if (bleMouse.isConnected()) {
+    if (!isCalibrated) {
+      Serial.println("[BLE] Host connected. Waking sensor and calibrating...");
+      wakeMPU();
+      calibrateSensors();
+      smoothX = 0.0f;
+      smoothY = 0.0f;
+      scrollAccumulator = 0.0f;
+      isCalibrated = true;
+    }
+
     handleButtons();
 
     bool isScrollMode = (btnScroll.stableState == LOW);
     handleMotion(isScrollMode);
+    delay(10); // 100 Hz active sampling loop
+  } else {
+    if (isCalibrated) {
+      // Host disconnected: put sensor to sleep and turn off indicators
+      isCalibrated = false;
+      digitalWrite(PIN_LED_CALIB, LOW);
+      digitalWrite(PIN_LED_BTN, LOW);
+      rgbLedWrite(LED_PIN, 0, 0, 0);
+      sleepMPU();
+      Serial.println("[POWER] Host disconnected. Sensor in sleep mode.");
+    }
+    delay(50); // Low-power idle delay while awaiting connection
   }
-
-  delay(10); // 100 Hz sampling loop
 }

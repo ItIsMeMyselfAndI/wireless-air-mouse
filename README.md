@@ -44,18 +44,12 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 Demonstration videos showing the wireless air mouse paired and operating on **Arch Linux** and **Windows 11**:
 
 ### Arch Linux Demo
-> Pairing via BlueZ, desktop cursor movement, left/right clicking, and tilt scrolling.
 
-<video src="public/arch.mp4" controls width="100%"></video>
-
-[View Arch Linux Demo (`public/arch.mp4`)](public/arch.mp4)
+https://github.com/user-attachments/assets/d7c611b4-07c6-410c-aeed-35b9f366da14
 
 ### Windows 11 Demo
-> Native HOGP BLE mouse detection, pairing, and desktop cursor control.
 
-<video src="public/windows11.mp4" controls width="100%"></video>
-
-[View Windows 11 Demo (`public/windows11.mp4`)](public/windows11.mp4)
+https://github.com/user-attachments/assets/044e8ecb-bf99-42f8-b70f-0e2770f0f278
 
 ---
 

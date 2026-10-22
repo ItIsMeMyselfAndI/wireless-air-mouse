@@ -24,18 +24,40 @@ An inertial Bluetooth Low Energy (BLE) air mouse built with the ESP32-C3 Super M
 ### ESP32-C3 Super Mini (Default)
 
 #### Schematic Diagram
-![Wireless Air Mouse ESP32-C3 Schematic](schematic_c3.svg)
+![Wireless Air Mouse ESP32-C3 Schematic](public/schematic_c3.svg)
 
 #### Breadboard Prototype
-![Wireless Air Mouse ESP32-C3 Breadboard Prototype](breadboard_c3.jpg)
+![Wireless Air Mouse ESP32-C3 Breadboard Prototype](public/breadboard_c3.jpg)
 
 ### ESP32-S3 Super Mini
 
 #### Schematic Diagram
-![Wireless Air Mouse ESP32-S3 Schematic](schematic_s3.svg)
+![Wireless Air Mouse ESP32-S3 Schematic](public/schematic_s3.svg)
 
 #### Breadboard Prototype
-![Wireless Air Mouse ESP32-S3 Breadboard Prototype](breadboard_s3.jpg)
+![Wireless Air Mouse ESP32-S3 Breadboard Prototype](public/breadboard_s3.jpg)
+
+---
+
+## Working Demos
+
+Demonstration videos showing the wireless air mouse paired and operating on **Arch Linux** and **Windows 11**:
+
+### Arch Linux Demo
+> Pairing via BlueZ, desktop cursor movement, left/right clicking, and tilt scrolling.
+
+<video src="public/arch.mp4" controls width="100%"></video>
+
+[View Arch Linux Demo (`public/arch.mp4`)](public/arch.mp4)
+
+### Windows 11 Demo
+> Native HOGP BLE mouse detection, pairing, and desktop cursor control.
+
+<video src="public/windows11.mp4" controls width="100%"></video>
+
+[View Windows 11 Demo (`public/windows11.mp4`)](public/windows11.mp4)
+
+---
 
 ## Board Selection & Hardware Pinout
 
@@ -220,14 +242,11 @@ Install the following libraries via the Arduino IDE Library Manager or `arduino-
 
 ---
 
-> [!WARNING]
-> **Platform Testing Notice**: This firmware has only been tested on **Linux** and **Android**. It has **not yet been tested on Windows**.
-
-### Platform Compatibility & Testing Status
+## Platform Compatibility & Testing Status
 
 | Platform | Testing Status | Notes |
 | :--- | :--- | :--- |
+| **Windows 10 / 11** | Tested & Verified | Native HOGP BLE mouse detection, pairing, and controls confirmed. |
 | **Linux (Arch Linux / BlueZ)** | Tested & Verified | Full cursor movement, buttons, and scroll wheel verified. |
 | **Android** | Tested & Verified | Native BLE mouse pointer, clicks, and scrolling verified. |
-| **Windows 10 / 11** | **Untested** | HOGP descriptor and appearance included, but unverified on hardware. |
-| **macOS / iOS** | **Untested** | Standard BLE HID implementation; not yet verified on hardware. |
+| **macOS / iOS** | **Untested** | Standard BLE HID implementation; not yet verified on physical hardware. |
